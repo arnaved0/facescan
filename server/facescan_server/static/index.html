@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FaceScan</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header>
+    <h1>FaceScan</h1>
+    <div class="actions">
+      <button id="new-scan" class="primary">New scan</button>
+      <label class="button" title="Upload a capture .zip saved from the iPhone app">
+        Import capture
+        <input id="import-file" type="file" accept=".zip,application/zip" hidden>
+      </label>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <ul id="scan-list"></ul>
+      <p id="empty-list" class="muted">No scans yet. Click <b>New scan</b> to start.</p>
+    </aside>
+
+    <section id="detail" hidden>
+      <div class="detail-head">
+        <h2 id="d-name"></h2>
+        <span id="d-state" class="badge"></span>
+        <button id="d-rename" class="link">Rename</button>
+      </div>
+
+      <div id="d-progress" class="progress" hidden>
+        <div class="bar"><div id="d-bar"></div></div>
+        <span id="d-stage"></span>
+      </div>
+      <p id="d-error" class="error" hidden></p>
+
+      <div class="viewer-wrap">
+        <div id="viewer"></div>
+        <div class="viewer-tools">
+          <label><input id="v-color" type="checkbox" checked> Colour</label>
+          <label><input id="v-wire" type="checkbox"> Wireframe</label>
+          <button id="v-reset" class="link">Reset view</button>
+        </div>
+        <p id="viewer-empty" class="muted center">The model appears here when processing finishes.</p>
+      </div>
+
+      <div class="columns">
+        <div>
+          <h3>Model</h3>
+          <dl id="d-report"></dl>
+          <ul id="d-warnings" class="warnings"></ul>
+          <h3>Download</h3>
+          <ul id="d-files" class="files"></ul>
+          <p class="muted small">STL and 3MF are in millimetres, base on the build plate, face towards −Y.</p>
+        </div>
+        <form id="d-params">
+          <h3>Processing settings</h3>
+          <label>Detail (voxel size, mm)
+            <input name="voxel_size_mm" type="number" step="0.05" min="0.4" max="3">
+            <small>Smaller is sharper but slower and uses more memory. 0.6 to 0.8 suits TrueDepth.</small>
+          </label>
+          <label>Back cut (mm behind head centre)
+            <input name="back_cut_mm" type="number" step="5" min="-120" max="40">
+            <small>Flat back of the bust. More negative keeps more of the head; −40 is just behind the ears.</small>
+          </label>
+          <label>Bottom cut (mm below head centre)
+            <input name="bottom_cut_mm" type="number" step="5" min="-200" max="0">
+            <small>Flat base. −110 keeps the chin and a little neck.</small>
+          </label>
+          <label>Smoothing passes
+            <input name="smoothing_iterations" type="number" step="1" min="0" max="50">
+          </label>
+          <label>Max triangles
+            <input name="target_faces" type="number" step="50000" min="0" max="5000000">
+            <small>0 keeps every triangle. The mesh stays watertight either way.</small>
+          </label>
+          <label>Scale (% of life size)
+            <input name="scale_percent" type="number" step="1" min="1" max="500">
+          </label>
+          <label>…or fixed height (mm)
+            <input name="target_height_mm" type="number" step="1" min="5" max="1000" placeholder="off">
+            <small>Overrides the scale when set.</small>
+          </label>
+          <div class="row">
+            <button id="d-reprocess" class="primary" type="submit">Reprocess</button>
+            <button id="d-defaults" type="button">Defaults</button>
+          </div>
+          <div class="row danger-row">
+            <a id="d-capture" class="link" href="#">Download original capture</a>
+            <button id="d-delete" type="button" class="danger">Delete scan</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="new-dialog">
+    <h2>Scan your face</h2>
+    <div class="qr-row">
+      <div id="qr"></div>
+      <ol>
+        <li>On your iPhone (with Face ID), open the Camera app and point it at this code.</li>
+        <li>Tap the link, then <b>Open in FaceScan</b>.</li>
+        <li>Hold the phone at arm's length, about 30 cm from your face, and follow the spoken prompts.</li>
+        <li>The scan uploads here and processing starts automatically.</li>
+      </ol>
+    </div>
+    <p class="muted small">Link: <code id="phone-url"></code></p>
+    <p id="lan-note" class="muted small">The phone must be on the same Wi-Fi network as this computer.</p>
+    <p id="wait-status" class="waiting">Waiting for the iPhone…</p>
+    <div class="row"><button id="new-close">Close</button></div>
+  </dialog>
+
+  <div id="toast" hidden></div>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

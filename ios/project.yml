@@ -1,0 +1,90 @@
+# XcodeGen spec. Generate the Xcode project with:  xcodegen generate
+# Then open FaceScan.xcodeproj, set your team, and run on an iPhone with Face ID.
+#
+# Edit these three settings before building:
+#   DEVELOPMENT_TEAM   your Apple team ID (Xcode > Settings > Accounts)
+#   BUNDLE_ID          a bundle ID you own; the App Clip uses BUNDLE_ID.Clip
+#   APP_DOMAIN         the HTTPS domain serving the web app (App Clip / universal links only)
+name: FaceScan
+options:
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""
+    BUNDLE_ID: com.example.facescan
+    APP_DOMAIN: scan.example.com
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_STYLE: Automatic
+    TARGETED_DEVICE_FAMILY: "1,2"
+
+# Info.plist keys shared by the app and the App Clip.
+x-common-info: &info
+  CFBundleDisplayName: FaceScan
+  CFBundleShortVersionString: $(MARKETING_VERSION)
+  CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+  UILaunchScreen: {}
+  UIRequiredDeviceCapabilities: [arm64, arkit, front-facing-camera]
+  UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+  UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait]
+  NSCameraUsageDescription: FaceScan uses the TrueDepth camera to measure the shape of your face for a 3D model.
+  NSLocalNetworkUsageDescription: FaceScan uploads your scan to the FaceScan web app on your computer over Wi-Fi.
+  NSAppTransportSecurity:
+    # The web app usually runs on your own computer over plain HTTP on the LAN.
+    NSAllowsLocalNetworking: true
+
+targets:
+  FaceScan:
+    type: application
+    platform: iOS
+    sources:
+      - path: FaceScan
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID)
+        PRODUCT_NAME: FaceScan
+    info:
+      path: Generated/FaceScan-Info.plist
+      properties:
+        <<: *info
+        # Only the full app registers the scheme; App Clips cannot.
+        CFBundleURLTypes:
+          - CFBundleURLName: $(BUNDLE_ID)
+            CFBundleURLSchemes: [facescan]
+    entitlements:
+      path: Generated/FaceScan.entitlements
+      properties:
+        com.apple.developer.associated-domains:
+          - applinks:$(APP_DOMAIN)
+          - appclips:$(APP_DOMAIN)
+    dependencies:
+      - target: FaceScanClip
+        embed: true
+        codeSign: true
+
+  FaceScanClip:
+    type: application.on-demand-install-capable
+    platform: iOS
+    sources:
+      - path: FaceScan
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(BUNDLE_ID).Clip
+        PRODUCT_NAME: FaceScanClip
+    info:
+      path: Generated/FaceScanClip-Info.plist
+      properties:
+        <<: *info
+        NSAppClip:
+          NSAppClipRequestEphemeralUserNotification: false
+          NSAppClipRequestLocationConfirmation: false
+    entitlements:
+      path: Generated/FaceScanClip.entitlements
+      properties:
+        com.apple.developer.parent-application-identifiers:
+          - $(AppIdentifierPrefix)$(BUNDLE_ID)
+        com.apple.developer.associated-domains:
+          - appclips:$(APP_DOMAIN)
